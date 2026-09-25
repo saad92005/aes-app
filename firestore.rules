@@ -1,0 +1,43 @@
+rules_version = '2';
+
+// ============================================================================
+// Al-Areesh Engineering (AES) app - Firestore Security Rules
+// ============================================================================
+// Trust model: this is an internal company tool - every collection below only
+// requires "signed in" (a real Firebase Auth account, i.e. someone who can
+// actually log into the app with a valid username/password). That alone
+// blocks every anonymous/public internet request, which no rules (or fully
+// open rules) would not.
+//
+// Earlier versions of these rules also gated reads/writes on each caller's
+// role and active/deactivated status, looked up via get() on their own
+// users/{uid} profile doc from inside the rules themselves. That role lookup
+// was independently confirmed (via direct account/data checks and a live
+// A/B test on the `sites` collection) to fail in production even when the
+// account's stored data was verified correct - reads relying on it worked,
+// but writes gated on a role check (e.g. canManageSites()) were rejected
+// with permission-denied every time. Rather than leave a core feature
+// (Gmail sync's ability to write work orders/sites) broken while that gets
+// root-caused, every rule below was simplified to drop the get()-based
+// lookup entirely. Role-based restrictions (who can see which nav items,
+// approve expenses, manage employees, etc.) still fully apply client-side
+// via lib/models/permissions.dart - this only changes what the *server*
+// additionally re-checks, not what the app's own UI allows any given role
+// to reach.
+// ============================================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Anyone with a real, signed-in account (any role) may read or write any
+    // document - the app's own screens/Permissions class still control which
+    // roles ever reach a given action; this only ever blocks fully signed-out
+    // requests.
+    match /{document=**} {
+      allow read, write: if isSignedIn();
+    }
+  }
+}

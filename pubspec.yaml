@@ -1,0 +1,54 @@
+name: al_aresh_app
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.24+25
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  firebase_core: 3.15.2
+  firebase_auth: 5.7.0
+  cloud_firestore: 5.6.12
+  google_sign_in: 6.2.1
+  google_sign_in_web: ^0.12.4
+  http: ^1.2.0
+  url_launcher: ^6.3.2
+  image_picker: ^1.2.3
+  share_plus: ^13.2.1
+  geolocator: ^14.0.3
+  fl_chart: ^1.2.0
+  pdf: ^3.11.1
+  excel: ^4.0.6
+  speech_to_text: ^7.0.0
+  file_selector: ^1.1.0
+  syncfusion_flutter_pdf: ^27.1.51
+  local_auth: ^2.3.0
+  shared_preferences: ^2.3.2
+  flutter_local_notifications: ^18.0.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.3
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/logo.png
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/logo.png"
+  # White padding around the gear/text so Android's adaptive-icon mask (which crops to a
+  # circle/squircle on many launchers) doesn't clip the logo - min_sdk 21 is the Play Store
+  # floor anyway so adaptive icons are always relevant, not just a bonus for newer phones.
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/images/logo.png"

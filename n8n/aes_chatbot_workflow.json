@@ -1,0 +1,89 @@
+{
+  "name": "AES AI Assistant",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "aes-chatbot",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-460, 0],
+      "webhookId": "aes-chatbot"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "anthropic-version", "value": "2023-06-01" },
+            { "name": "content-type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"model\": \"claude-opus-4-8\",\n  \"max_tokens\": 2048,\n  \"system\": \"You are an internal AI assistant for Al Areesh Engineering Services (AES), a facilities and MEP contracting company in Pakistan. You help Back Office staff, Operational Managers, the Head of Operations, Finance, and the CEO. You can: (1) research current market rates and pricing benchmarks for construction, MEP, electrical, or facilities services by searching the web - always say when a figure comes from a web search and note it is a general market estimate, not the company's official pricing; (2) draft professional emails (client follow-ups, quotation cover notes, internal memos) - write them ready to copy and send; (3) answer general business questions. Be concise and practical.\",\n  \"tools\": [{\"type\": \"web_search_20260209\", \"name\": \"web_search\"}],\n  \"messages\": $json.body.history.concat([{\"role\": \"user\", \"content\": $json.body.message}])\n} }}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "call-claude",
+      "name": "Call Claude",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-240, 0],
+      "continueOnFail": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": "Anthropic API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json;\n\nif (body.error) {\n  return [{ json: { reply: `Sorry, something went wrong talking to the assistant: ${body.error.message || JSON.stringify(body.error)}` } }];\n}\n\nconst content = body.content || [];\nconst text = content\n  .filter((b) => b.type === 'text')\n  .map((b) => b.text)\n  .join('\\n\\n')\n  .trim();\n\nreturn [{ json: { reply: text || \"Sorry, I couldn't generate a response.\" } }];"
+      },
+      "id": "extract-reply",
+      "name": "Extract Reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-20, 0]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"reply\": $json.reply } }}",
+        "options": {}
+      },
+      "id": "respond",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [200, 0]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [[{ "node": "Call Claude", "type": "main", "index": 0 }]]
+    },
+    "Call Claude": {
+      "main": [[{ "node": "Extract Reply", "type": "main", "index": 0 }]]
+    },
+    "Extract Reply": {
+      "main": [[{ "node": "Respond to Webhook", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

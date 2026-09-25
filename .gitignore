@@ -1,0 +1,27 @@
+.dart_tool/
+.packages
+.pubspec.lock
+.flutter-plugins
+.flutter-plugins-dependencies
+build/
+android/.gradle/
+android/.kotlin/
+android/local.properties
+ios/Pods/
+ios/.symlinks/
+macos/Pods/
+.firebase/
+*.iml
+
+# Release signing - never commit the keystore or its passwords. Losing key.properties is
+# recoverable (regenerate from the values you backed up separately); losing the .jks file
+# itself is NOT - it's the one thing that proves future updates come from you.
+android/key.properties
+android/app/upload-keystore.jks
+*.jks
+*.keystore
+
+# Editor/tool config - not relevant to anyone cloning this to look at the app.
+.idea/
+.claude/
+*.iml
