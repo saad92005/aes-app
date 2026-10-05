@@ -1,4 +1,8 @@
-# AES App
+# AES App — Field Operations & Business Management Platform
+
+**One Flutter codebase that runs an engineering services company end to end: work orders, GPS attendance, payroll, double-entry accounting, inventory and role-based access for 12 roles.**
+
+<img src="assets/images/store_screenshots/screenshot_3.jpg" alt="AES App dashboard: work orders by region and status" width="280">
 
 A cross-platform (Android, iOS, Web, Windows) internal business management app built for **Al-Areesh Engineering Solutions (AES)**, a facilities/engineering services company. Built with Flutter and Firebase.
 
@@ -15,6 +19,18 @@ A single app covering the full operational and financial workflow for a multi-re
 - **Expenses & Vendor Bills** — two-stage approval workflow
 - **Role-based access control** — 12 distinct roles (CEO, Operational Manager, Finance, HSSE, BDM/HR, Store Manager, field employees, vendors, etc.), each with a tailored set of permissions and nav items
 - **AI Assistant** — a Groq-backed chat assistant scoped to the signed-in user's own visible data
+
+## Architecture
+
+```mermaid
+flowchart LR
+    App[Flutter app<br/>Android · iOS · Web · Windows] --> Auth[Firebase Auth<br/>+ biometric login]
+    App --> FS[(Cloud Firestore<br/>security rules per role)]
+    App --> Gmail[Gmail API<br/>work-order import]
+    App --> GPS[Geolocator<br/>verified check-in]
+    App --> LLM[Groq LLM<br/>AI assistant]
+    App --> Export[PDF / Excel / CSV export]
+```
 
 ## Tech stack
 
@@ -36,6 +52,14 @@ lib/
   services/               # DataService (Firestore), AuthService, PayrollEngine, ExportService, ...
   widgets/                # shared UI components
 ```
+
+## Known technical debt
+
+Written down honestly for anyone reviewing the code:
+
+- **Single compilation unit.** Every file is a `part of` `main.dart` and shares top-level state. This was fast to build, but it couples features together. A feature-based layout with a state-management layer (Riverpod or Bloc) is the planned refactor.
+- **The LLM key lives on the client.** The AI assistant calls Groq directly, so a key compiled into the app can be extracted. `n8n/` contains a server-side proxy workflow (the key stays in n8n) that is the intended fix but is not wired in yet.
+- **Tests.** `test/widget_test.dart` is still the Flutter template test. The payroll engine and accounting logic are the first candidates for real unit tests.
 
 ## Running this yourself
 
