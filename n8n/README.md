@@ -1,35 +1,44 @@
-# AES AI Assistant - n8n workflow
+# AES AI Assistant: n8n proxy
 
-This workflow is the backend for the "AI Assistant" chat feature in the app. It keeps your
-Anthropic (Claude) API key out of the app entirely - the Flutter app only ever talks to your
-n8n webhook, and n8n is the only thing that holds the real API key.
+The app's AI Assistant sends its chat request (OpenAI-compatible: `{ model, messages }`) to
+this n8n webhook instead of straight to Groq. n8n checks the request, adds the Groq API key
+from its own credential store, forwards it, and returns Groq's response unchanged.
+
+The result is that **no API key is compiled into the app**. Anything inside an APK or a web
+bundle can be extracted, but the webhook URL alone does not reveal the key.
+
+```
+Flutter app ──POST {model, messages}──▶ n8n webhook ──▶ validate ──▶ Groq API
+                                               ◀──────── response ◀──┘
+```
 
 ## Setup
 
-1. In n8n, go to **Workflows -> Import from File** and select `aes_chatbot_workflow.json`.
-2. Open the **Call Claude** node and set up its credential:
-   - Click the credential field -> **Create New Credential**.
-   - Credential type: **Header Auth**.
-   - Name: `x-api-key`
-   - Value: your Anthropic API key (starts with `sk-ant-`).
-   - Save it, then select it on the node.
-3. Click **Activate** (top right) to turn the workflow on.
-4. Open the **Webhook** node and copy its **Production URL** (looks like
-   `https://your-n8n-host/webhook/aes-chatbot`).
-5. In the Flutter app, open `lib/main.dart`, find `_n8nChatWebhookUrl` near the top of the
-   file, and paste that URL in. Rebuild the app.
+1. In n8n: **Workflows → Import from File** → `aes_ai_proxy_workflow.json`.
+2. Open **Call Groq** → credential → **Create New** → type **Header Auth**:
+   - Name: `Authorization`
+   - Value: `Bearer <your GroqCloud key>`
+3. **Activate** the workflow and copy the Webhook node's **Production URL**
+   (for example `https://your-n8n-host/webhook/aes-ai`).
+4. Build the app with that URL:
 
-That's it - no Firebase changes, no API key anywhere in the app's code or build output.
+   ```bash
+   flutter build apk --dart-define=AI_PROXY_URL=https://your-n8n-host/webhook/aes-ai
+   flutter build web --dart-define=AI_PROXY_URL=https://your-n8n-host/webhook/aes-ai
+   ```
 
-## What it does
+## Safeguards
 
-- Receives `{ "message": "...", "history": [...] }` from the app.
-- Calls Claude (`claude-opus-4-8`) with the web search tool enabled, so it can look up
-  current market rates from the web when asked.
-- Returns `{ "reply": "..." }` back to the app.
+- **Model allow-list.** Only the two models the app uses (`llama-3.3-70b-versatile` and the
+  Llama 4 Scout vision model) are forwarded, and only for a bounded message list. Anything
+  else gets a 400, so the webhook can't be used as a general-purpose free Groq relay.
+- **Caller identity (optional hardening).** The app sends the signed-in user's Firebase ID
+  token in `X-Firebase-Id-Token`. The workflow does not verify it yet. Adding a verification
+  step (Google's public keys, or a small Cloud Function) would restrict the proxy to real
+  AES users.
+- Keep a usage limit on the Groq key in the Groq console as well.
 
-## Cost
+## Local development
 
-Each chat message costs whatever Claude bills for that request (usage-based, billed to
-your Anthropic account) - there is no separate n8n hosting cost if you're already running
-n8n, and no Firebase plan change is required for this feature.
+For quick local testing without n8n you can pass a key directly:
+`flutter run --dart-define=GROQ_API_KEY=gsk_...`. Never ship a build made this way.

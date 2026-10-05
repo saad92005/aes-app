@@ -1,7 +1,7 @@
 part of '../main.dart';
 
 // ---------------- AI ASSISTANT SCREEN ----------------
-// Calls the Groq API directly (see groqApiKey in main.dart) and, on every message, prepends
+// Calls Groq through the n8n proxy (see aiProxyUrl in main.dart) and, on every message, prepends
 // a freshly-computed summary of the app's own live data (_buildAiSystemInstruction below) so
 // the model can actually answer factual questions about this company's real
 // work orders/quotations/expenses instead of only general knowledge.
@@ -345,13 +345,21 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
             {'role': m.role == 'user' ? 'user' : 'assistant', 'content': contentFor(m)},
       ];
 
-      final url = Uri.parse('https://api.groq.com/openai/v1/chat/completions');
+      // Prefer the n8n proxy (key stays server-side); call Groq directly only when a local
+      // development key is configured and no proxy is. Same OpenAI-compatible request and
+      // response either way - the proxy forwards it unchanged.
+      final viaProxy = aiProxyUrl.isNotEmpty;
+      final url = Uri.parse(viaProxy ? aiProxyUrl : 'https://api.groq.com/openai/v1/chat/completions');
+      final headers = <String, String>{'Content-Type': 'application/json'};
+      if (viaProxy) {
+        // Lets the proxy verify the caller is a signed-in AES user if it chooses to.
+        final idToken = await FirebaseAuth.instance.currentUser?.getIdToken();
+        if (idToken != null) headers['X-Firebase-Id-Token'] = idToken;
+      } else {
+        headers['Authorization'] = 'Bearer $groqApiKey';
+      }
       final response = await http
-          .post(
-            url,
-            headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $groqApiKey'},
-            body: jsonEncode({'model': modelToUse, 'messages': messages}),
-          )
+          .post(url, headers: headers, body: jsonEncode({'model': modelToUse, 'messages': messages}))
           .timeout(const Duration(seconds: 60));
 
       if (response.statusCode == 200) {
@@ -381,7 +389,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (groqApiKey.isEmpty) {
+    if (!aiAssistantConfigured) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -402,7 +410,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                 Text(tr('AI Assistant not set up yet'), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AESColors.darkGreen)),
                 const SizedBox(height: 8),
                 const Text(
-                  'Set groqApiKey in lib/main.dart to a GroqCloud API key to turn this on.',
+                  'Set AI_PROXY_URL (see n8n/README.md) to turn this on.',
                   style: TextStyle(fontSize: 13, color: AESColors.grey),
                 ),
               ],

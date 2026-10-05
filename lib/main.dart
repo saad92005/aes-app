@@ -124,11 +124,16 @@ part 'screens/payroll_reports_screen.dart';
 // a different prefix and endpoint) - wired up against Groq's actual OpenAI-compatible API
 // accordingly so it authenticates correctly.
 //
-// SECURITY NOTE: because this is a client-side web app with no server to hide it behind,
-// this key ends up visible in the compiled JS bundle to anyone who opens DevTools - there is
-// no way around that without adding a paid backend. Only use a key you're comfortable being
-// exposed this way (e.g. restricted to a low quota on Groq's side).
-const String groqApiKey = '';
+// SECURITY NOTE: anything compiled into the app (web bundle or APK) can be extracted, so a
+// key here is effectively public. Production builds should leave groqApiKey empty and set
+// aiProxyUrl instead: the n8n workflow in n8n/ forwards the request to Groq and is the only
+// place the real key lives. groqApiKey is a local-development fallback only.
+//
+// Both can also be supplied at build time without editing source:
+//   flutter build apk --dart-define=AI_PROXY_URL=https://your-n8n-host/webhook/aes-ai
+const String aiProxyUrl = String.fromEnvironment('AI_PROXY_URL');
+const String groqApiKey = String.fromEnvironment('GROQ_API_KEY');
+bool get aiAssistantConfigured => aiProxyUrl.isNotEmpty || groqApiKey.isNotEmpty;
 const String groqModel = 'llama-3.3-70b-versatile';
 // Used only for messages that include an attached image - a plain text model can't accept
 // an image_url content part at all, so image analysis needs a vision-capable model instead.

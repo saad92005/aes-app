@@ -1,5 +1,7 @@
 # AES App — Field Operations & Business Management Platform
 
+[![Tests](https://github.com/saad92005/aes-app/actions/workflows/test.yml/badge.svg)](https://github.com/saad92005/aes-app/actions/workflows/test.yml)
+
 **One Flutter codebase that runs an engineering services company end to end: work orders, GPS attendance, payroll, double-entry accounting, inventory and role-based access for 12 roles.**
 
 <img src="assets/images/store_screenshots/screenshot_3.jpg" alt="AES App dashboard: work orders by region and status" width="280">
@@ -18,7 +20,7 @@ A single app covering the full operational and financial workflow for a multi-re
 - **Inventory** — stock tracking, tool assignments, transaction history
 - **Expenses & Vendor Bills** — two-stage approval workflow
 - **Role-based access control** — 12 distinct roles (CEO, Operational Manager, Finance, HSSE, BDM/HR, Store Manager, field employees, vendors, etc.), each with a tailored set of permissions and nav items
-- **AI Assistant** — a Groq-backed chat assistant scoped to the signed-in user's own visible data
+- **AI Assistant** — a Groq-backed chat assistant scoped to the signed-in user's own visible data, called through an n8n proxy so no API key ships in the app
 
 ## Architecture
 
@@ -58,16 +60,24 @@ lib/
 Written down honestly for anyone reviewing the code:
 
 - **Single compilation unit.** Every file is a `part of` `main.dart` and shares top-level state. This was fast to build, but it couples features together. A feature-based layout with a state-management layer (Riverpod or Bloc) is the planned refactor.
-- **The LLM key lives on the client.** The AI assistant calls Groq directly, so a key compiled into the app can be extracted. `n8n/` contains a server-side proxy workflow (the key stays in n8n) that is the intended fix but is not wired in yet.
-- **Tests.** `test/widget_test.dart` is still the Flutter template test. The payroll engine and accounting logic are the first candidates for real unit tests.
+- **AI proxy caller verification.** The assistant now goes through an n8n proxy, so no key ships in the app (see [n8n/README.md](n8n/README.md)). The proxy does not yet verify the Firebase ID token the app sends.
+- **Test coverage.** The payroll engine has unit tests covering attendance, leave, lateness, overtime, holidays and deduction rules. Accounting and the UI do not have tests yet.
+
+## Testing
+
+```bash
+flutter test
+```
+
+`test/payroll_engine_test.dart` checks the payroll engine end to end on a fixed month: a perfect month, absences, paid and unpaid leave, the grace period, per-minute and progressive late deductions, overtime eligibility, early checkout, joining mid-month, mid-month runs, public holidays and the zero floor on net salary.
 
 ## Running this yourself
 
-This is a showcase copy — the real Firebase project credentials have been replaced with placeholders (`lib/firebase_options.dart`, `android/app/google-services.json`, `ios/Runner/GoogleService-Info.plist`, `macos/Runner/GoogleService-Info.plist`) and the Groq API key has been removed. To run it against your own backend:
+This is a showcase copy — the real Firebase project credentials have been replaced with placeholders (`lib/firebase_options.dart`, `android/app/google-services.json`, `ios/Runner/GoogleService-Info.plist`, `macos/Runner/GoogleService-Info.plist`) and no API key is included. To run it against your own backend:
 
 1. Create a Firebase project and run `flutterfire configure` to regenerate `lib/firebase_options.dart` and the platform config files with your own project's real values.
 2. Deploy `firestore.rules` to your project.
-3. (Optional) Add your own Groq API key to `groqApiKey` in `lib/main.dart` to enable the AI Assistant.
+3. (Optional) To enable the AI Assistant, import the n8n proxy ([n8n/README.md](n8n/README.md)) and build with `--dart-define=AI_PROXY_URL=<webhook url>`.
 4. `flutter pub get`
 5. `flutter run`
 
