@@ -29,8 +29,8 @@ Flutter app ──POST {model, messages}──▶ n8n webhook ──▶ validate
 
 ## Safeguards
 
-- **Model allow-list.** Only the two models the app uses (`llama-3.3-70b-versatile` and the
-  Llama 4 Scout vision model) are forwarded, and only for a bounded message list. Anything
+- **Model allow-list.** Only the two models the app uses (`openai/gpt-oss-120b` for text and
+  `qwen/qwen3.8-27b` for images) are forwarded, `max_tokens` is capped at 1000, and only for a bounded message list. Anything
   else gets a 400, so the webhook can't be used as a general-purpose free Groq relay.
 - **Caller identity (optional hardening).** The app sends the signed-in user's Firebase ID
   token in `X-Firebase-Id-Token`. The workflow does not verify it yet. Adding a verification

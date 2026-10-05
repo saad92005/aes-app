@@ -134,10 +134,15 @@ part 'screens/payroll_reports_screen.dart';
 const String aiProxyUrl = String.fromEnvironment('AI_PROXY_URL');
 const String groqApiKey = String.fromEnvironment('GROQ_API_KEY');
 bool get aiAssistantConfigured => aiProxyUrl.isNotEmpty || groqApiKey.isNotEmpty;
-const String groqModel = 'llama-3.3-70b-versatile';
+// Groq retired its hosted Llama 3.x/4 models in 2026; these are the current free-tier
+// equivalents (both verified against the live API).
+const String groqModel = 'openai/gpt-oss-120b';
 // Used only for messages that include an attached image - a plain text model can't accept
 // an image_url content part at all, so image analysis needs a vision-capable model instead.
-const String groqVisionModel = 'meta-llama/llama-4-scout-17b-16e-instruct';
+const String groqVisionModel = 'qwen/qwen3.8-27b';
+// Groq's free tier caps this model's output at 1000 tokens per minute; requests that ask
+// for more are rejected outright, so vision replies are bounded below that.
+const int groqVisionMaxTokens = 900;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

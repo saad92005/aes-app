@@ -359,7 +359,11 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
         headers['Authorization'] = 'Bearer $groqApiKey';
       }
       final response = await http
-          .post(url, headers: headers, body: jsonEncode({'model': modelToUse, 'messages': messages}))
+          .post(url, headers: headers, body: jsonEncode({
+            'model': modelToUse,
+            'messages': messages,
+            if (needsVision) 'max_tokens': groqVisionMaxTokens,
+          }))
           .timeout(const Duration(seconds: 60));
 
       if (response.statusCode == 200) {

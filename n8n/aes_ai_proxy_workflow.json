@@ -28,7 +28,7 @@
         0
       ],
       "parameters": {
-        "jsCode": "// Only forward requests shaped like the app's own chat call, to the two models it uses.\n// Stops the webhook from being used as a free general-purpose Groq relay.\nconst ALLOWED_MODELS = ['llama-3.3-70b-versatile', 'meta-llama/llama-4-scout-17b-16e-instruct'];\nconst body = $input.first().json.body || {};\nif (!ALLOWED_MODELS.includes(body.model) || !Array.isArray(body.messages) || body.messages.length === 0 || body.messages.length > 60) {\n  return [{ json: { valid: false } }];\n}\nreturn [{ json: { valid: true, payload: { model: body.model, messages: body.messages } } }];"
+        "jsCode": "// Only forward requests shaped like the app's own chat call, to the two models it uses.\n// Stops the webhook from being used as a free general-purpose Groq relay.\nconst ALLOWED_MODELS = ['openai/gpt-oss-120b', 'qwen/qwen3.8-27b'];\nconst body = $input.first().json.body || {};\nif (!ALLOWED_MODELS.includes(body.model) || !Array.isArray(body.messages) || body.messages.length === 0 || body.messages.length > 60) {\n  return [{ json: { valid: false } }];\n}\nconst payload = { model: body.model, messages: body.messages };\nif (typeof body.max_tokens === 'number') payload.max_tokens = Math.min(body.max_tokens, 1000);\nreturn [{ json: { valid: true, payload } }];"
       }
     },
     {
